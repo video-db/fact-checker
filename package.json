@@ -1,0 +1,36 @@
+{
+  "name": "fact-checker-desktop",
+  "version": "1.0.0",
+  "description": "Real-time fact-checking tray app",
+  "main": "app/main.js",
+  "scripts": {
+    "start": "./scripts/start.sh",
+    "setup": "./scripts/setup.sh",
+    "electron": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^39.0.0",
+    "electron-builder": "^24.6.4"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3"
+  },
+  "build": {
+    "appId": "com.videodb.fact-checker",
+    "productName": "Fact Checker",
+    "mac": {
+      "identity": null,
+      "hardenedRuntime": true,
+      "entitlements": "entitlements.mac.plist",
+      "entitlementsInherit": "entitlements.mac.plist",
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "Fact Checker needs microphone access to capture audio for real-time fact-checking.",
+        "NSScreenCaptureUsageDescription": "Fact Checker needs screen recording access to capture system audio.",
+        "NSCameraUsageDescription": "Fact Checker may use camera access for video capture."
+      },
+      "target": ["dmg", "zip"]
+    },
+    "icon": "resources/icon.icns",
+    "files": ["app/**/*", "entitlements.mac.plist", "package.json"]
+  }
+}

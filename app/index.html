@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fact Checker</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-secondary: #111111;
+      --bg-tertiary: #161616;
+      --bg-card: #141414;
+      --bg-card-hover: #1a1a1a;
+      --bg-input: #0e0e0e;
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --border-medium: rgba(255, 255, 255, 0.1);
+      --border-strong: rgba(255, 255, 255, 0.15);
+      --text-primary: #f5f5f5;
+      --text-secondary: #b0b0b0;
+      --text-tertiary: #8a8a8a;
+      --text-muted: #5e5e5e;
+      --accent: #ff4d00;
+      --accent-light: #ff6c02;
+      --accent-glow: rgba(255, 77, 0, 0.15);
+      --accent-glow-strong: rgba(255, 77, 0, 0.25);
+      --green: #34d058;
+      --green-dim: rgba(52, 208, 88, 0.15);
+      --red: #f85149;
+      --red-dim: rgba(248, 81, 73, 0.15);
+      --amber: #d29922;
+      --amber-dim: rgba(210, 153, 34, 0.15);
+      --blue: #58a6ff;
+      --blue-dim: rgba(88, 166, 255, 0.12);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-pill: 44px;
+      --transition: 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      -webkit-app-region: no-drag;
+      user-select: none;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .container {
+      position: relative;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      width: 400px;
+      height: 580px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow:
+        0 24px 48px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.04);
+    }
+
+    /* ── Toast system ─────────────────────────────────────── */
+
+    .toast-container {
+      position: absolute;
+      top: 52px;
+      left: 12px;
+      right: 12px;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      pointer-events: none;
+    }
+
+    .toast {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      line-height: 1.45;
+      pointer-events: auto;
+      animation: toastIn 0.3s var(--transition);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    .toast.fade-out {
+      animation: toastOut 0.25s ease-in forwards;
+    }
+
+    .toast.error {
+      background: rgba(248, 81, 73, 0.12);
+      border: 1px solid rgba(248, 81, 73, 0.2);
+      color: #f88;
+    }
+
+    .toast.success {
+      background: rgba(52, 208, 88, 0.12);
+      border: 1px solid rgba(52, 208, 88, 0.2);
+      color: #6fd87a;
+    }
+
+    .toast.warning {
+      background: rgba(210, 153, 34, 0.12);
+      border: 1px solid rgba(210, 153, 34, 0.2);
+      color: #e0b44a;
+    }
+
+    .toast-body { flex: 1; min-width: 0; }
+    .toast-title { font-weight: 600; margin-bottom: 2px; }
+    .toast-detail { opacity: 0.8; font-size: 11px; word-wrap: break-word; }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(-10px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes toastOut {
+      from { opacity: 1; transform: translateY(0) scale(1); }
+      to { opacity: 0; transform: translateY(-10px) scale(0.97); }
+    }
+
+    /* ── Header ───────────────────────────────────────────── */
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      flex-shrink: 0;
+      -webkit-app-region: drag;
+      cursor: grab;
+      background: rgba(255, 255, 255, 0.015);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    .header:active { cursor: grabbing; }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-logo {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, var(--accent) 0%, #ff8533 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .header-logo svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .header-title {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+      color: var(--text-primary);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      -webkit-app-region: no-drag;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      padding: 4px 10px;
+      border-radius: var(--radius-pill);
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      transition: all 0.3s;
+    }
+
+    .status-dot.active {
+      background: var(--green);
+      box-shadow: 0 0 8px rgba(52, 208, 88, 0.5);
+    }
+
+    .status-dot.starting {
+      background: var(--accent);
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .header-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      transition: all var(--transition);
+      padding: 0;
+    }
+
+    .header-btn:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-secondary);
+    }
+
+    .header-btn:active { transform: scale(0.9); }
+
+    .header-btn.close-btn:hover {
+      background: var(--red-dim);
+      color: var(--red);
+    }
+
+    /* ── Activity bar ─────────────────────────────────────── */
+
+    .activity-bar {
+      display: none;
+      padding: 8px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      background: rgba(255, 77, 0, 0.02);
+      flex-shrink: 0;
+    }
+
+    .activity-bar.visible {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .activity-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.2px;
+      text-transform: uppercase;
+      color: var(--text-tertiary);
+    }
+
+    .activity-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+    }
+
+    .activity-dot.audio {
+      background: var(--green);
+      animation: dotPulse 2s ease-in-out infinite;
+    }
+
+    .activity-dot.transcription {
+      background: var(--blue);
+      animation: dotPulse 1.6s ease-in-out infinite 0.3s;
+    }
+
+    .activity-dot.analysis {
+      background: var(--accent-light);
+      animation: dotPulse 1.8s ease-in-out infinite 0.6s;
+    }
+
+    @keyframes dotPulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 4px currentColor; }
+      50% { opacity: 0.3; box-shadow: none; }
+    }
+
+    /* ── Transcript ticker ────────────────────────────────── */
+
+    .transcript-ticker {
+      display: none;
+      padding: 7px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 11px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      flex-shrink: 0;
+    }
+
+    .transcript-ticker.visible { display: block; }
+
+    .transcript-ticker .ticker-label {
+      color: var(--accent);
+      font-weight: 600;
+      margin-right: 8px;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .transcript-ticker .ticker-text {
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
+
+    /* ── Controls ─────────────────────────────────────────── */
+
+    .controls {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      flex-shrink: 0;
+    }
+
+    .control-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .control-row:last-child { margin-bottom: 0; }
+
+    label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      width: 46px;
+      flex-shrink: 0;
+      letter-spacing: 0.1px;
+    }
+
+    select, input[type="text"] {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      color: #e0e0e0;
+      font-size: 12px;
+      font-family: inherit;
+      font-weight: 400;
+      outline: none;
+      transition: all var(--transition);
+    }
+
+    select:focus, input[type="text"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    select:disabled, input[type="text"]:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      color: #999;
+    }
+
+    select {
+      -webkit-appearance: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23606060' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 30px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition);
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      letter-spacing: -0.1px;
+    }
+
+    .btn:active:not(:disabled) { transform: scale(0.98); }
+
+    .btn-start {
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 2px 12px rgba(255, 77, 0, 0.25);
+    }
+
+    .btn-start:hover:not(:disabled) {
+      background: var(--accent-light);
+      box-shadow: 0 4px 20px rgba(255, 77, 0, 0.35);
+    }
+
+    .btn-start:disabled {
+      background: rgba(255, 77, 0, 0.35);
+      cursor: not-allowed;
+    }
+
+    .btn-stop {
+      background: transparent;
+      color: var(--red);
+      border: 1px solid rgba(248, 81, 73, 0.25);
+    }
+
+    .btn-stop:hover:not(:disabled) {
+      background: var(--red-dim);
+      border-color: rgba(248, 81, 73, 0.4);
+    }
+
+    .btn-stop:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-pause {
+      background: transparent;
+      color: var(--amber);
+      border: 1px solid rgba(210, 153, 34, 0.25);
+    }
+
+    .btn-pause:hover:not(:disabled) {
+      background: var(--amber-dim);
+      border-color: rgba(210, 153, 34, 0.4);
+    }
+
+    .btn-pause:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 13px;
+      height: 13px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Alerts ───────────────────────────────────────────── */
+
+    .alerts-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .alert-count {
+      background: var(--accent-glow);
+      color: var(--accent-light);
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      font-size: 10px;
+      font-weight: 600;
+      min-width: 20px;
+      text-align: center;
+    }
+
+    .alerts-feed {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 12px 12px;
+      min-height: 0;
+    }
+
+    .alerts-feed::-webkit-scrollbar { width: 3px; }
+    .alerts-feed::-webkit-scrollbar-track { background: transparent; }
+    .alerts-feed::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 2px;
+    }
+
+    .alert-card {
+      position: relative;
+      background: var(--bg-card);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      border: 1px solid var(--border-subtle);
+      transition: all var(--transition);
+      animation: cardIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .alert-card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-medium);
+    }
+
+    .alert-card.verified { border-left: 3px solid var(--green); }
+    .alert-card.misleading { border-left: 3px solid var(--red); }
+    .alert-card.needs_context { border-left: 3px solid var(--amber); }
+
+    .alert-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .alert-label {
+      display: inline-flex;
+      align-items: center;
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    .alert-label.verified {
+      background: var(--green-dim);
+      color: var(--green);
+    }
+
+    .alert-label.misleading {
+      background: var(--red-dim);
+      color: var(--red);
+    }
+
+    .alert-label.needs_context {
+      background: var(--amber-dim);
+      color: var(--amber);
+    }
+
+    .alert-copy-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      opacity: 0;
+      transition: all var(--transition);
+      padding: 0;
+      flex-shrink: 0;
+    }
+
+    .alert-card:hover .alert-copy-btn { opacity: 1; }
+
+    .alert-copy-btn:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-secondary);
+    }
+
+    .alert-copy-btn:active { transform: scale(0.88); }
+    .alert-copy-btn.copied { color: var(--green); opacity: 1; }
+
+    .alert-claim {
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+      user-select: text;
+      word-wrap: break-word;
+      font-weight: 400;
+    }
+
+    .alert-note {
+      font-size: 11.5px;
+      line-height: 1.5;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      user-select: text;
+      word-wrap: break-word;
+    }
+
+    .alert-sources {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      user-select: text;
+      word-wrap: break-word;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .alert-sources .source-label {
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .alert-sources a {
+      color: var(--accent-light);
+      text-decoration: none;
+      transition: color var(--transition);
+    }
+
+    .alert-sources a:hover {
+      color: #ff9061;
+      text-decoration: underline;
+    }
+
+    .alert-time {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    /* ── Empty state ──────────────────────────────────────── */
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--text-tertiary);
+      gap: 12px;
+    }
+
+    .empty-state-icon {
+      opacity: 0.2;
+      animation: emptyFloat 4s ease-in-out infinite;
+    }
+
+    @keyframes emptyFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+    .empty-state-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      letter-spacing: -0.2px;
+    }
+
+    .empty-state-hint {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      max-width: 220px;
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    /* ── Footer ───────────────────────────────────────────── */
+
+    .footer {
+      padding: 10px 16px;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      font-size: 10px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+      background: rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    .footer-stats {
+      display: flex;
+      justify-content: space-around;
+      flex: 1;
+    }
+
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .stat-value {
+      font-weight: 600;
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stat-label {
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .stat-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+    }
+
+    .stat-dot.verified { background: var(--green); }
+    .stat-dot.misleading { background: var(--red); }
+    .stat-dot.needs_context { background: var(--amber); }
+
+    .footer-quit {
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      font-size: 10px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-family: inherit;
+      transition: all var(--transition);
+      flex-shrink: 0;
+    }
+
+    .footer-quit:hover {
+      color: var(--red);
+      background: var(--red-dim);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Toast container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Header -->
+    <div class="header">
+      <div class="header-left">
+        <div class="header-logo">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M9 3L5 7L9 11" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M15 3L19 7L15 11" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="header-title">Fact Checker</span>
+      </div>
+      <div class="header-actions">
+        <div class="status-badge" role="status" aria-live="polite">
+          <span class="status-dot" id="statusDot"></span>
+          <span id="statusText">Idle</span>
+        </div>
+        <button class="header-btn close-btn" id="closePopupBtn" title="Close">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+            <path d="M3.5 3.5L10.5 10.5M10.5 3.5L3.5 10.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Activity indicators -->
+    <div class="activity-bar" id="activityBar">
+      <div class="activity-item">
+        <span class="activity-dot audio"></span>
+        <span>Audio</span>
+      </div>
+      <div class="activity-item">
+        <span class="activity-dot transcription"></span>
+        <span>Transcription</span>
+      </div>
+      <div class="activity-item">
+        <span class="activity-dot analysis"></span>
+        <span>Fact-Check</span>
+      </div>
+    </div>
+
+    <!-- Live transcript ticker -->
+    <div class="transcript-ticker" id="transcriptTicker">
+      <span class="ticker-label">Live</span>
+      <span class="ticker-text" id="tickerText">Waiting for audio...</span>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <div class="control-row">
+        <label for="sourceType">Source</label>
+        <select id="sourceType">
+          <option value="youtube">YouTube / YouTube Live</option>
+          <option value="meet">Google Meet</option>
+          <option value="local">Local video file</option>
+          <option value="stream">Live stream (URL)</option>
+        </select>
+      </div>
+      <div class="control-row">
+        <label for="targetInput" id="targetLabel">URL</label>
+        <input type="text" id="targetInput" maxlength="2048" placeholder="https://youtube.com/watch?v=...">
+      </div>
+      <div class="control-row">
+        <button class="btn btn-start" id="actionBtn" onclick="handleAction()">
+          Start Fact-Checking
+        </button>
+      </div>
+      <div class="control-row" id="pauseRow" style="display: none;">
+        <button class="btn btn-pause" id="pauseBtn" onclick="handlePauseResume()" style="flex: 1;">
+          Pause
+        </button>
+      </div>
+    </div>
+
+    <!-- Alerts -->
+    <div class="alerts-header">
+      <span>Alerts</span>
+      <span class="alert-count" id="alertCount">0</span>
+    </div>
+
+    <div class="alerts-feed" id="alertsFeed">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-state-icon">
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+            <circle cx="18" cy="18" r="14" stroke="#333" stroke-width="1.2"/>
+            <path d="M13 18L16.5 21.5L23 14.5" stroke="#333" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="empty-state-title">No alerts yet</div>
+        <div class="empty-state-hint">Pick a source and start fact-checking. Alerts appear here as claims are verified.</div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="footer-stats">
+        <div class="stat">
+          <span class="stat-value" id="statTotal">0</span>
+          <span class="stat-label">Notes</span>
+        </div>
+        <div class="stat">
+          <span class="stat-dot verified"></span>
+          <span class="stat-value" id="statVerified">0</span>
+          <span class="stat-label">Verified</span>
+        </div>
+        <div class="stat">
+          <span class="stat-dot misleading"></span>
+          <span class="stat-value" id="statMisleading">0</span>
+          <span class="stat-label">Misleading</span>
+        </div>
+        <div class="stat">
+          <span class="stat-dot needs_context"></span>
+          <span class="stat-value" id="statContext">0</span>
+          <span class="stat-label">Context</span>
+        </div>
+      </div>
+      <button class="footer-quit" id="quitBtn" title="Quit Fact Checker">Quit</button>
+    </div>
+  </div>
+
+  <script>
+    // Constants
+    const MAX_ALERTS = 200;
+
+    // State
+    let isActive = false;
+    let isPaused = false;
+    let alertNotes = [];
+    let stats = { total_notes: 0, verified: 0, misleading: 0, needs_context: 0 };
+    let lastSeenAlertId = 0;
+    let sessionStartTime = 0;
+    let statsPollingTimer = null;
+    let statsSlowdownTimer = null;
+    let timestampUpdateTimer = null;
+
+    // Elements
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+    const sourceType = document.getElementById('sourceType');
+    const targetInput = document.getElementById('targetInput');
+    const targetLabel = document.getElementById('targetLabel');
+    const actionBtn = document.getElementById('actionBtn');
+    const alertsFeed = document.getElementById('alertsFeed');
+    const alertCount = document.getElementById('alertCount');
+    const emptyState = document.getElementById('emptyState');
+    const transcriptTicker = document.getElementById('transcriptTicker');
+    const tickerText = document.getElementById('tickerText');
+    const toastContainer = document.getElementById('toastContainer');
+    const activityBar = document.getElementById('activityBar');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const pauseRow = document.getElementById('pauseRow');
+
+    // Header buttons
+    document.getElementById('closePopupBtn').addEventListener('click', () => {
+      window.factChecker.hideWindow();
+    });
+    document.getElementById('quitBtn').addEventListener('click', () => {
+      window.factChecker.quitApp();
+    });
+
+    // Source type placeholders
+    const placeholders = {
+      youtube: 'https://youtube.com/watch?v=...',
+      meet: 'https://meet.google.com/...',
+      local: '/path/to/video.mp4',
+      stream: 'https://...',
+    };
+
+    const labels = {
+      youtube: 'URL',
+      meet: 'URL',
+      local: 'Path',
+      stream: 'URL',
+    };
+
+    sourceType.addEventListener('change', () => {
+      targetInput.placeholder = placeholders[sourceType.value] || '';
+      targetLabel.textContent = labels[sourceType.value] || 'URL';
+    });
+
+    // -------------------------------------------------------------------
+    // Toast system
+    // -------------------------------------------------------------------
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function showToast(title, detail, type = 'error', duration = 7000) {
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `
+        <div class="toast-body">
+          <div class="toast-title">${escapeHtml(title)}</div>
+          ${detail ? `<div class="toast-detail">${escapeHtml(detail)}</div>` : ''}
+        </div>
+      `;
+      toastContainer.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.add('fade-out');
+        toast.addEventListener('animationend', () => toast.remove());
+      }, duration);
+    }
+
+    // -------------------------------------------------------------------
+    // Actions
+    // -------------------------------------------------------------------
+
+    async function handleAction() {
+      if (isActive) {
+        await stopSession();
+      } else {
+        await startSession();
+      }
+    }
+
+    async function handlePauseResume() {
+      if (!isActive) return;
+      pauseBtn.disabled = true;
+      if (isPaused) {
+        await window.factChecker.resumeSession();
+        isPaused = false;
+        pauseBtn.textContent = 'Pause';
+        pauseBtn.className = 'btn btn-pause';
+        setStatus('active', 'Active');
+        startStatsPolling();
+      } else {
+        await window.factChecker.pauseSession();
+        isPaused = true;
+        pauseBtn.textContent = 'Resume';
+        pauseBtn.className = 'btn btn-start';
+        setStatus('idle', 'Paused');
+        stopStatsPolling();
+      }
+      pauseBtn.disabled = false;
+    }
+
+    function validateTarget(source, target) {
+      if (!target) return 'Please enter a URL or path for the source.';
+      if (target.includes('\n') || target.includes('\r')) return 'Input cannot contain newlines.';
+      if (source === 'local') {
+        if (target.length > 1024) return 'Path is too long.';
+        if (target.includes('..')) return 'Path cannot contain ".." segments.';
+        return null;
+      }
+      try {
+        const url = new URL(target);
+        if (!['http:', 'https:'].includes(url.protocol)) return 'URL must start with http:// or https://';
+      } catch {
+        return 'Please enter a valid URL.';
+      }
+      return null;
+    }
+
+    async function ensurePermissions() {
+      const perms = await window.factChecker.checkPermissions();
+
+      // Request microphone if not granted (triggers macOS dialog)
+      if (perms.microphone !== 'granted') {
+        const micResult = await window.factChecker.requestMicPermission();
+        if (!micResult.granted) {
+          showToast('Microphone denied', 'Grant Microphone access in System Settings, then try again.', 'error');
+          window.factChecker.openSystemSettings('microphone');
+          return false;
+        }
+      }
+
+      // Screen Recording: macOS has no programmatic request API and
+      // getMediaAccessStatus('screen') is unreliable in both directions.
+      // Show a non-blocking reminder; if capture actually fails, the error
+      // handler will open System Settings with specific guidance.
+      if (perms.screen !== 'granted') {
+        showToast(
+          'Screen Recording reminder',
+          'If capture fails, grant Screen Recording in System Settings > Privacy & Security > Screen & System Audio Recording.',
+          'warning',
+          8000
+        );
+      }
+
+      return true;
+    }
+
+    async function startSession() {
+      const source = sourceType.value;
+      const target = targetInput.value.trim();
+
+      const validationError = validateTarget(source, target);
+      if (validationError) {
+        targetInput.style.borderColor = 'var(--red)';
+        showToast('Invalid input', validationError, 'warning');
+        setTimeout(() => { targetInput.style.borderColor = ''; }, 1500);
+        return;
+      }
+
+      setStatus('starting', 'Checking permissions...');
+      actionBtn.disabled = true;
+      actionBtn.innerHTML = '<span class="spinner"></span> Permissions...';
+      sourceType.disabled = true;
+      targetInput.disabled = true;
+
+      const permsOk = await ensurePermissions();
+      if (!permsOk) {
+        setStatus('idle', 'Idle');
+        actionBtn.className = 'btn btn-start';
+        actionBtn.innerHTML = 'Start Fact-Checking';
+        actionBtn.disabled = false;
+        sourceType.disabled = false;
+        targetInput.disabled = false;
+        return;
+      }
+
+      setStatus('starting', 'Starting...');
+      actionBtn.innerHTML = '<span class="spinner"></span> Starting...';
+
+      try {
+        const result = await window.factChecker.startSession({
+          sourceType: source,
+          target: target,
+        });
+
+        if (result.success) {
+          isActive = true;
+          isPaused = false;
+          sessionStartTime = Date.now();
+          setStatus('active', 'Active');
+          actionBtn.className = 'btn btn-stop';
+          actionBtn.innerHTML = 'Stop Fact-Checking';
+          actionBtn.disabled = false;
+          pauseRow.style.display = '';
+          pauseBtn.textContent = 'Pause';
+          pauseBtn.className = 'btn btn-pause';
+          activityBar.classList.add('visible');
+          transcriptTicker.classList.add('visible');
+          startStatsPolling();
+          startTimestampUpdates();
+        } else {
+          setStatus('idle', 'Failed');
+          actionBtn.className = 'btn btn-start';
+          actionBtn.innerHTML = 'Start Fact-Checking';
+          actionBtn.disabled = false;
+          sourceType.disabled = false;
+          targetInput.disabled = false;
+          showToast('Session failed', result.error || 'Could not start session.', 'error');
+          setTimeout(() => setStatus('idle', 'Idle'), 3000);
+        }
+      } catch (err) {
+        setStatus('idle', 'Failed');
+        actionBtn.className = 'btn btn-start';
+        actionBtn.innerHTML = 'Start Fact-Checking';
+        actionBtn.disabled = false;
+        sourceType.disabled = false;
+        targetInput.disabled = false;
+        showToast('Session error', err.message || 'Unexpected error starting session.', 'error');
+        setTimeout(() => setStatus('idle', 'Idle'), 3000);
+      }
+    }
+
+    async function stopSession() {
+      setStatus('starting', 'Stopping...');
+      actionBtn.disabled = true;
+      actionBtn.innerHTML = '<span class="spinner"></span> Stopping...';
+
+      await window.factChecker.stopSession();
+
+      resetToIdle();
+    }
+
+    function resetToIdle() {
+      isActive = false;
+      isPaused = false;
+      setStatus('idle', 'Idle');
+      actionBtn.className = 'btn btn-start';
+      actionBtn.innerHTML = 'Start Fact-Checking';
+      actionBtn.disabled = false;
+      sourceType.disabled = false;
+      targetInput.disabled = false;
+      pauseRow.style.display = 'none';
+      pauseBtn.textContent = 'Pause';
+      pauseBtn.className = 'btn btn-pause';
+      activityBar.classList.remove('visible');
+      transcriptTicker.classList.remove('visible');
+      tickerText.textContent = 'Waiting for audio...';
+      stopStatsPolling();
+      stopTimestampUpdates();
+
+      if (alertNotes.length === 0) {
+        emptyState.style.display = '';
+      }
+    }
+
+    function setStatus(state, text) {
+      statusDot.className = 'status-dot';
+      if (state === 'active') statusDot.classList.add('active');
+      if (state === 'starting') statusDot.classList.add('starting');
+      statusText.textContent = text;
+    }
+
+    // -------------------------------------------------------------------
+    // Alert rendering
+    // -------------------------------------------------------------------
+
+    function formatRelativeTime(ts) {
+      const diff = Math.floor((Date.now() - ts) / 1000);
+      if (diff < 10) return 'just now';
+      if (diff < 60) return `${diff}s ago`;
+      const mins = Math.floor(diff / 60);
+      if (mins < 60) return `${mins}m ago`;
+      const hours = Math.floor(mins / 60);
+      if (hours < 24) return `${hours}h ago`;
+      return `${Math.floor(hours / 24)}d ago`;
+    }
+
+    function addAlertNotes(notes) {
+      if (!notes || notes.length === 0) return;
+
+      emptyState.style.display = 'none';
+
+      const wasScrolledToTop = alertsFeed.scrollTop < 10;
+
+      for (const note of notes) {
+        note._ts = Date.now();
+        alertNotes.unshift(note);
+        const card = createAlertCard(note);
+        alertsFeed.prepend(card);
+      }
+
+      if (wasScrolledToTop) {
+        alertsFeed.scrollTop = 0;
+      }
+
+      while (alertNotes.length > MAX_ALERTS) {
+        alertNotes.pop();
+        const children = alertsFeed.querySelectorAll('.alert-card');
+        if (children.length > MAX_ALERTS) {
+          children[children.length - 1].remove();
+        }
+      }
+
+      alertCount.textContent = alertNotes.length;
+    }
+
+    function createAlertCard(note) {
+      const card = document.createElement('div');
+      const label = note.label || 'unknown';
+      card.className = `alert-card ${label}`;
+
+      const headerRow = document.createElement('div');
+      headerRow.className = 'alert-header-row';
+
+      const labelBadge = document.createElement('span');
+      labelBadge.className = `alert-label ${label}`;
+      labelBadge.textContent = label.replace('_', ' ');
+      headerRow.appendChild(labelBadge);
+
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'alert-copy-btn';
+      copyBtn.title = 'Copy to clipboard';
+      copyBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 14 14" fill="none"><rect x="4.5" y="4.5" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M9.5 4.5V2.5A1.5 1.5 0 008 1H2.5A1.5 1.5 0 001 2.5V8a1.5 1.5 0 001.5 1.5h2" stroke="currentColor" stroke-width="1.3"/></svg>';
+      copyBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        copyAlertToClipboard(note, copyBtn);
+      });
+      headerRow.appendChild(copyBtn);
+
+      card.appendChild(headerRow);
+
+      const claim = document.createElement('div');
+      claim.className = 'alert-claim';
+      claim.textContent = `"${note.claim}"`;
+      card.appendChild(claim);
+
+      if (note.note) {
+        const noteText = document.createElement('div');
+        noteText.className = 'alert-note';
+        noteText.textContent = note.note;
+        card.appendChild(noteText);
+      }
+
+      if (note.sources && note.sources.length > 0) {
+        const sources = document.createElement('div');
+        sources.className = 'alert-sources';
+        const label = document.createElement('span');
+        label.className = 'source-label';
+        label.textContent = 'Sources:';
+        sources.appendChild(label);
+        for (let i = 0; i < note.sources.length; i++) {
+          const src = note.sources[i];
+          if (src.startsWith('http://') || src.startsWith('https://')) {
+            const link = document.createElement('a');
+            link.href = src;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            try { link.textContent = new URL(src).hostname.replace('www.', ''); } catch { link.textContent = src; }
+            link.addEventListener('click', (e) => {
+              e.preventDefault();
+              window.factChecker.openExternal(src);
+            });
+            sources.appendChild(link);
+          } else {
+            const text = document.createElement('span');
+            text.textContent = src;
+            sources.appendChild(text);
+          }
+          if (i < note.sources.length - 1) {
+            sources.appendChild(document.createTextNode(', '));
+          }
+        }
+        card.appendChild(sources);
+      }
+
+      const timeEl = document.createElement('div');
+      timeEl.className = 'alert-time';
+      timeEl.setAttribute('data-ts', note._ts || Date.now());
+      timeEl.textContent = 'just now';
+      card.appendChild(timeEl);
+
+      return card;
+    }
+
+    function copyAlertToClipboard(note, btn) {
+      const label = (note.label || 'unknown').toUpperCase().replace('_', ' ');
+      let text = `[${label}] "${note.claim}"`;
+      if (note.note) text += `\nNote: ${note.note}`;
+      if (note.sources && note.sources.length > 0) {
+        text += `\nSources: ${note.sources.join(', ')}`;
+      }
+
+      navigator.clipboard.writeText(text).then(() => {
+        btn.classList.add('copied');
+        btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2.5 7.5L5.5 10.5L11.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 14 14" fill="none"><rect x="4.5" y="4.5" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M9.5 4.5V2.5A1.5 1.5 0 008 1H2.5A1.5 1.5 0 001 2.5V8a1.5 1.5 0 001.5 1.5h2" stroke="currentColor" stroke-width="1.3"/></svg>';
+        }, 1500);
+      }).catch(() => {
+        showToast('Copy failed', 'Could not copy to clipboard.', 'warning');
+      });
+    }
+
+    // -------------------------------------------------------------------
+    // Timestamps
+    // -------------------------------------------------------------------
+
+    function updateAllTimestamps() {
+      const timeEls = alertsFeed.querySelectorAll('.alert-time[data-ts]');
+      for (const el of timeEls) {
+        const ts = parseInt(el.getAttribute('data-ts'), 10);
+        if (ts) el.textContent = formatRelativeTime(ts);
+      }
+    }
+
+    function startTimestampUpdates() {
+      stopTimestampUpdates();
+      timestampUpdateTimer = setInterval(updateAllTimestamps, 15000);
+    }
+
+    function stopTimestampUpdates() {
+      if (timestampUpdateTimer) {
+        clearInterval(timestampUpdateTimer);
+        timestampUpdateTimer = null;
+      }
+    }
+
+    // -------------------------------------------------------------------
+    // Stats polling
+    // -------------------------------------------------------------------
+
+    function startStatsPolling() {
+      stopStatsPolling();
+      pollStats();
+      statsPollingTimer = setInterval(pollStats, 2000);
+      statsSlowdownTimer = setTimeout(() => {
+        statsSlowdownTimer = null;
+        if (statsPollingTimer) {
+          clearInterval(statsPollingTimer);
+          statsPollingTimer = setInterval(pollStats, 5000);
+        }
+      }, 30000);
+    }
+
+    function stopStatsPolling() {
+      if (statsSlowdownTimer) {
+        clearTimeout(statsSlowdownTimer);
+        statsSlowdownTimer = null;
+      }
+      if (statsPollingTimer) {
+        clearInterval(statsPollingTimer);
+        statsPollingTimer = null;
+      }
+    }
+
+    async function pollStats() {
+      try {
+        const result = await window.factChecker.getStats();
+        if (result) {
+          updateStats(result);
+        }
+      } catch (e) {
+        // Backend may not be ready yet
+      }
+    }
+
+    function updateStats(newStats) {
+      stats = { ...stats, ...newStats };
+      document.getElementById('statTotal').textContent = stats.total_notes || 0;
+      document.getElementById('statVerified').textContent = stats.verified || 0;
+      document.getElementById('statMisleading').textContent = stats.misleading || 0;
+      document.getElementById('statContext').textContent = stats.needs_context || 0;
+
+      if (newStats.last_transcript) {
+        tickerText.textContent = `"${newStats.last_transcript}${newStats.last_transcript.length >= 80 ? '...' : ''}"`;
+      } else if (newStats.chunks_analyzed > 0) {
+        tickerText.textContent = 'Processing transcript...';
+      } else if (isActive) {
+        const elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+        if (elapsed < 10) {
+          tickerText.textContent = 'Connecting to audio stream...';
+        } else if (elapsed < 25) {
+          tickerText.textContent = 'Capturing audio, waiting for speech...';
+        } else {
+          tickerText.textContent = 'Listening... first check runs at ~30s';
+        }
+      }
+    }
+
+    // -------------------------------------------------------------------
+    // IPC listeners (with cleanup refs — Improvement 4)
+    // -------------------------------------------------------------------
+
+    const cleanups = [];
+
+    cleanups.push(window.factChecker.onFactCheckAlert((data) => {
+      if (data.id && data.id <= lastSeenAlertId) return;
+      if (data.id) lastSeenAlertId = data.id;
+
+      if (data.all_notes) {
+        addAlertNotes(data.all_notes);
+      }
+
+      pollStats();
+    }));
+
+    cleanups.push(window.factChecker.onSessionStatus((status) => {
+      if (status === 'stopped') {
+        resetToIdle();
+      }
+    }));
+
+    cleanups.push(window.factChecker.onBackendStatus((status) => {
+      if (status === 'stopped') {
+        resetToIdle();
+        setStatus('idle', 'Backend stopped');
+      }
+    }));
+
+    cleanups.push(window.factChecker.onErrorMessage((data) => {
+      showToast(data.title || 'Error', data.detail || 'An unexpected error occurred.', 'error');
+    }));
+
+    // -------------------------------------------------------------------
+    // Cleanup on window unload (Improvement 4)
+    // -------------------------------------------------------------------
+
+    window.addEventListener('beforeunload', () => {
+      cleanups.forEach(fn => fn && fn());
+      stopStatsPolling();
+      stopTimestampUpdates();
+    });
+
+    // -------------------------------------------------------------------
+    // Session state recovery on popup reload
+    // -------------------------------------------------------------------
+
+    (async function recoverSessionState() {
+      try {
+        const state = await window.factChecker.getSessionState();
+        if (state && (state.backendRunning || state.clientRunning)) {
+          isActive = true;
+          isPaused = !!state.isPaused;
+          actionBtn.className = 'btn btn-stop';
+          actionBtn.innerHTML = 'Stop Fact-Checking';
+          sourceType.disabled = true;
+          targetInput.disabled = true;
+          pauseRow.style.display = '';
+          activityBar.classList.add('visible');
+          transcriptTicker.classList.add('visible');
+          if (isPaused) {
+            setStatus('idle', 'Paused');
+            pauseBtn.textContent = 'Resume';
+            pauseBtn.className = 'btn btn-start';
+          } else {
+            setStatus('active', 'Active');
+            pauseBtn.textContent = 'Pause';
+            pauseBtn.className = 'btn btn-pause';
+            startStatsPolling();
+          }
+          startTimestampUpdates();
+          // Hide empty state if alerts are already present
+          if (alertNotes.length > 0) {
+            emptyState.style.display = 'none';
+          }
+        }
+      } catch (e) {
+        // Ignore — first load
+      }
+    })();
+  </script>
+</body>
+</html>

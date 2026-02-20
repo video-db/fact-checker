@@ -1,0 +1,28 @@
+# Environment
+.env
+.env.local
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+backend/venv/
+backend/.venv/
+
+# Node.js
+node_modules/
+dist/
+out/
+build/
+
+# Logs
+backend/logs/
+*.log
+
+# Build artifacts
+*.dmg
+*.zip
+
+# macOS
+.DS_Store
