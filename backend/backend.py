@@ -110,8 +110,13 @@ CALLBACK_RATE_LIMIT = 60  # max requests per minute per IP
 
 
 def _buffer_transcript(text):
-    """Append text to the transcript buffer, skipping duplicates."""
+    """Append text to the transcript buffer, skipping duplicates.
+
+    Must be called while holding ``buffer_lock`` — this protects both
+    ``transcript_buffer`` and ``_recent_transcripts``.
+    """
     global _last_transcript
+    assert buffer_lock.locked(), "_buffer_transcript called without buffer_lock"
     if text in _recent_transcripts:
         return
     _recent_transcripts.append(text)
@@ -503,7 +508,8 @@ def init_session():
 @app.route("/callback", methods=["POST"])
 def callback():
     """Handle VideoDB capture session lifecycle webhooks."""
-    # Validate callback token
+    # Validate callback token (passed as query parameter because VideoDB is
+    # the caller and doesn't support custom HMAC signing headers).
     token = request.args.get("token", "")
     if not _callback_secret or not hmac.compare_digest(token, _callback_secret):
         logger.warning("Unauthorized callback attempt from %s", request.remote_addr)
